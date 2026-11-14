@@ -19,7 +19,28 @@ public class ApiController(ApplicationDbContext db, ForecastingService forecasti
     }
 
     [HttpGet("dishes")]
-    public async Task<IEnumerable<MenuDish>> Dishes() => await db.MenuDishes.Include(x => x.Ingredients).ThenInclude(x => x.Ingredient).Where(x => x.IsActive).ToListAsync();
+    public async Task<IActionResult> Dishes()
+    {
+        var dishes = await db.MenuDishes
+            .Where(x => x.IsActive)
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.Category,
+                x.Calories,
+                ingredients = x.Ingredients.Select(i => new
+                {
+                    i.IngredientId,
+                    name = i.Ingredient.Name,
+                    i.QuantityPerServing,
+                    i.Ingredient.Unit,
+                    i.Ingredient.UnitCost
+                })
+            })
+            .ToListAsync();
+        return Ok(dishes);
+    }
 
     [HttpGet("waste-summary")]
     public async Task<IActionResult> WasteSummary() => Ok(await db.WasteRecords.GroupBy(x => x.Reason).Select(x => new { reason = x.Key.ToString(), quantity = x.Sum(y => y.Quantity), cost = x.Sum(y => y.Quantity * y.UnitCost) }).ToListAsync());
