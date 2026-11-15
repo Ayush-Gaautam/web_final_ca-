@@ -6,9 +6,19 @@ using web_ca_3.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var provider = builder.Configuration["DatabaseProvider"] ?? "Sqlite";
+var connectionString = provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase)
+    ? builder.Configuration.GetConnectionString("SqlServer")
+    : builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException($"Connection string for provider '{provider}' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+        options.UseSqlServer(connectionString);
+    else
+        options.UseSqlite(connectionString);
+});
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)

@@ -9,7 +9,18 @@ public static class DbInitializer
     public static async Task InitializeAsync(IServiceProvider services)
     {
         var db = services.GetRequiredService<ApplicationDbContext>();
-        await db.Database.EnsureCreatedAsync();
+        if (db.Database.IsSqlServer())
+            await db.Database.MigrateAsync();
+        else
+        {
+            await db.Database.EnsureCreatedAsync();
+            await EnsureSqliteDomainSchemaAsync(db);
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_Ingredients_Name ON Ingredients(Name);");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_MenuDishes_Name ON MenuDishes(Name);");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_AttendanceRecords_ServiceDate_Meal ON AttendanceRecords(ServiceDate, Meal);");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ServiceActuals_ServiceDate_Meal ON ServiceActuals(ServiceDate, Meal);");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ForecastRecords_ForecastDate_Meal ON ForecastRecords(ForecastDate, Meal);");
+        }
         if (await db.MenuDishes.AnyAsync()) return;
 
         var rice = new Ingredient { Name = "Rice", Unit = "kg", UnitCost = 70, CurrentStock = 40 };
@@ -44,4 +55,66 @@ public static class DbInitializer
             await userManager.AddToRoleAsync(admin, "Admin");
         }
     }
-}
+
+    private static async Task EnsureSqliteDomainSchemaAsync(ApplicationDbContext db)
+        {
+            var commands = new[]
+            {
+                """
+                CREATE TABLE IF NOT EXISTS Ingredients (
+                    Id INTEGER NOT NULL CONSTRAINT PK_Ingredients PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL, Unit TEXT NOT NULL, UnitCost decimal(18,2) NOT NULL, CurrentStock decimal(18,2) NOT NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS MenuDishes (
+                    Id INTEGER NOT NULL CONSTRAINT PK_MenuDishes PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL, Category TEXT NOT NULL, Calories INTEGER NOT NULL, IsActive INTEGER NOT NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS AttendanceRecords (
+                    Id INTEGER NOT NULL CONSTRAINT PK_AttendanceRecords PRIMARY KEY AUTOINCREMENT,
+                    ServiceDate TEXT NOT NULL, Meal INTEGER NOT NULL, ExpectedCount INTEGER NOT NULL, ActualCount INTEGER NOT NULL, Notes TEXT NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS CalendarEvents (
+                    Id INTEGER NOT NULL CONSTRAINT PK_CalendarEvents PRIMARY KEY AUTOINCREMENT,
+                    Title TEXT NOT NULL, EventDate TEXT NOT NULL, Description TEXT NULL, AttendanceAdjustment INTEGER NOT NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS ForecastRecords (
+                    Id INTEGER NOT NULL CONSTRAINT PK_ForecastRecords PRIMARY KEY AUTOINCREMENT,
+                    ForecastDate TEXT NOT NULL, Meal INTEGER NOT NULL, ForecastCount INTEGER NOT NULL, Confidence decimal(5,2) NOT NULL, Method TEXT NOT NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS ServiceActuals (
+                    Id INTEGER NOT NULL CONSTRAINT PK_ServiceActuals PRIMARY KEY AUTOINCREMENT,
+                    ServiceDate TEXT NOT NULL, Meal INTEGER NOT NULL, PreparedCount INTEGER NOT NULL, ServedCount INTEGER NOT NULL, LeftoverCount INTEGER NOT NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS RecipeIngredients (
+                    Id INTEGER NOT NULL CONSTRAINT PK_RecipeIngredients PRIMARY KEY AUTOINCREMENT,
+                    MenuDishId INTEGER NOT NULL, IngredientId INTEGER NOT NULL, QuantityPerServing decimal(18,3) NOT NULL,
+                    CONSTRAINT FK_RecipeIngredients_MenuDishes_MenuDishId FOREIGN KEY (MenuDishId) REFERENCES MenuDishes(Id) ON DELETE CASCADE,
+                    CONSTRAINT FK_RecipeIngredients_Ingredients_IngredientId FOREIGN KEY (IngredientId) REFERENCES Ingredients(Id) ON DELETE CASCADE
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS WasteRecords (
+                    Id INTEGER NOT NULL CONSTRAINT PK_WasteRecords PRIMARY KEY AUTOINCREMENT,
+                    WasteDate TEXT NOT NULL, IngredientId INTEGER NULL, MenuDishId INTEGER NULL, Quantity decimal(18,3) NOT NULL,
+                    UnitCost decimal(18,2) NOT NULL, Reason INTEGER NOT NULL, Notes TEXT NULL,
+                    CONSTRAINT FK_WasteRecords_Ingredients_IngredientId FOREIGN KEY (IngredientId) REFERENCES Ingredients(Id) ON DELETE SET NULL,
+                    CONSTRAINT FK_WasteRecords_MenuDishes_MenuDishId FOREIGN KEY (MenuDishId) REFERENCES MenuDishes(Id) ON DELETE SET NULL
+                );
+                """
+            };
+            foreach (var command in commands)
+                await db.Database.ExecuteSqlRawAsync(command);
+        }
+    }

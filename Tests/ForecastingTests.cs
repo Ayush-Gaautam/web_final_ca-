@@ -25,4 +25,17 @@ public class ForecastingTests
         var waste = new WasteRecord { Quantity = 2.5m, UnitCost = 120m };
         Assert.Equal(300m, waste.Cost);
     }
+
+    [Fact]
+    public void Forecast_ReportsMaeAndMape()
+    {
+        var service = new ForecastingService();
+        var records = new[]
+        {
+            new AttendanceRecord { Meal = MealType.Lunch, ExpectedCount = 100, ActualCount = 90 },
+            new AttendanceRecord { Meal = MealType.Lunch, ExpectedCount = 120, ActualCount = 100 }
+        };
+        Assert.Equal(15m, service.MeanAbsoluteError(records));
+        Assert.Equal(15.56m, service.MeanAbsolutePercentageError(records));
+    }
 }

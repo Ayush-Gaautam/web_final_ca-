@@ -1,0 +1,23 @@
+{
+  "info": {
+    "name": "MessForecast API",
+    "_postman_id": "messforecast-int402",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:5001" },
+    { "key": "dishId", "value": "1" },
+    { "key": "ingredientId", "value": "1" }
+  ],
+  "item": [
+    { "name": "Forecast", "request": { "method": "GET", "url": "{{baseUrl}}/api/forecast?meal=Lunch" } },
+    { "name": "Forecast metrics", "request": { "method": "GET", "url": "{{baseUrl}}/api/forecast/metrics?meal=Lunch" } },
+    { "name": "List dishes", "request": { "method": "GET", "url": "{{baseUrl}}/api/dishes" } },
+    { "name": "Create dish", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Seasonal Pulao\",\"category\":\"Main\",\"calories\":480,\"isActive\":true}" }, "url": "{{baseUrl}}/api/dishes" } },
+    { "name": "Update dish", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Seasonal Pulao\",\"category\":\"Main\",\"calories\":490,\"isActive\":true}" }, "url": "{{baseUrl}}/api/dishes/{{dishId}}" } },
+    { "name": "Delete dish (soft delete)", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/dishes/{{dishId}}" } },
+    { "name": "Record attendance", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"serviceDate\":\"2026-11-16\",\"meal\":1,\"expectedCount\":120,\"actualCount\":0,\"notes\":\"Tablet capture\"}" }, "url": "{{baseUrl}}/api/attendance" } },
+    { "name": "Record waste", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"wasteDate\":\"2026-11-16\",\"ingredientId\":1,\"quantity\":1.25,\"reason\":0,\"notes\":\"Overproduction\"}" }, "url": "{{baseUrl}}/api/waste" } },
+    { "name": "Waste summary", "request": { "method": "GET", "url": "{{baseUrl}}/api/waste-summary" } }
+  ]
+}

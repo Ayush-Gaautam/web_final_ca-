@@ -19,6 +19,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(builder);
         builder.Entity<RecipeIngredient>().HasIndex(x => new { x.MenuDishId, x.IngredientId }).IsUnique();
+        builder.Entity<Ingredient>().HasIndex(x => x.Name).IsUnique();
+        builder.Entity<MenuDish>().HasIndex(x => x.Name).IsUnique();
+        builder.Entity<AttendanceRecord>().HasIndex(x => new { x.ServiceDate, x.Meal }).IsUnique();
+        builder.Entity<ForecastRecord>().HasIndex(x => new { x.ForecastDate, x.Meal }).IsUnique();
+        builder.Entity<ServiceActual>().HasIndex(x => new { x.ServiceDate, x.Meal }).IsUnique();
+        builder.Entity<Ingredient>().ToTable(t => t.HasCheckConstraint("CK_Ingredients_UnitCost", "[UnitCost] >= 0"));
+        builder.Entity<Ingredient>().ToTable(t => t.HasCheckConstraint("CK_Ingredients_CurrentStock", "[CurrentStock] >= 0"));
+        builder.Entity<WasteRecord>().ToTable(t => t.HasCheckConstraint("CK_WasteRecords_Quantity", "[Quantity] >= 0"));
+        builder.Entity<ServiceActual>().ToTable(t => t.HasCheckConstraint("CK_ServiceActuals_Counts", "[PreparedCount] >= 0 AND [ServedCount] >= 0"));
         builder.Entity<WasteRecord>().Property(x => x.UnitCost).HasPrecision(18, 2);
         builder.Entity<Ingredient>().Property(x => x.UnitCost).HasPrecision(18, 2);
         builder.Entity<Ingredient>().Property(x => x.CurrentStock).HasPrecision(18, 2);

@@ -10,10 +10,13 @@
     <span class="badge text-bg-success px-3 py-2">Live planning</span>
 </div>
 <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Today's lunch forecast</div><div class="display-6 fw-bold">@Model.TodayForecast</div><small>servings</small></div></div></div>
+    <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Today's lunch forecast</div><div class="display-6 fw-bold">@Model.TodayForecast</div><small>@Model.ForecastConfidence.ToString("P0") confidence</small></div></div></div>
     <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Active dishes</div><div class="display-6 fw-bold">@Model.ActiveDishes</div><small>menu items</small></div></div></div>
     <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Ingredient stock value</div><div class="display-6 fw-bold">₹@Model.IngredientValue.ToString("N0")</div><small>current inventory</small></div></div></div>
     <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Waste this month</div><div class="display-6 fw-bold text-danger">₹@Model.WasteCostThisMonth.ToString("N0")</div><small>cost exposure</small></div></div></div>
+</div>
+<div class="alert alert-light border d-flex flex-wrap gap-4 align-items-center mb-4">
+    <strong>Forecast quality</strong><span>MAE: @Model.ForecastMae</span><span>MAPE: @Model.ForecastMape%</span><span>Weekday and calendar-event adjustments enabled</span>
 </div>
 <div class="row g-4">
     <div class="col-lg-7"><div class="card shadow-sm border-0"><div class="card-body"><h5>Record waste</h5><form asp-action="AddWaste" method="post" class="row g-2">

@@ -1,23 +1,48 @@
 # Mess Demand Forecasting & Food-Waste Management
 
-ASP.NET Core MVC MVP for INT402: C#, Razor views, EF Core, SQL Server, Identity authentication/roles, and REST APIs.
+INT402-aligned ASP.NET Core MVC application using C#, Razor views, EF Core, SQLite/SQL Server, Identity roles, and REST APIs. It avoids ML and unrelated technologies.
 
-## Run in Visual Studio Community
+## Safe local run
 
-1. Install the .NET 10 SDK (the current environment does not have the .NET 8 SDK; the project uses the same ASP.NET Core MVC and EF Core architecture and can be retargeted to `net8.0` once the .NET 8 SDK is installed).
-2. Install SQL Server LocalDB or change `ConnectionStrings:DefaultConnection` in `appsettings.json`.
-3. Open `web_ca_3.csproj`, restore packages, and run with IIS Express or `dotnet run`.
-4. The database is created and seeded on first run. Demo login: `admin@mess.local` / `Admin123!`.
+SQLite is the default so the existing `app.db` and its data are preserved:
 
-## Included MVP flows
+```powershell
+dotnet restore
+dotnet run
+```
 
-- Identity login plus Admin, Manager, and Staff roles.
-- Dish, recipe, ingredient, unit-cost, and stock entities.
-- Attendance history and event adjustments.
-- Weighted moving-average demand forecast with confidence score.
-- Ingredient planning primitives through `PlanningService`.
-- Post-service actuals and waste quantity/cost entities.
-- Dashboard with forecast, stock value, monthly waste cost, and waste capture.
-- REST endpoints: `GET /api/forecast`, `GET /api/dishes`, and `GET /api/waste-summary`.
+Demo login: `admin@mess.local` / `Admin123!`.
 
-For production, add migrations (`dotnet ef migrations add InitialCreate`) and use a managed SQL Server connection string.
+The app never runs `EnsureDeleted`, `database drop`, or a destructive reset. Existing SQLite data is retained; startup only creates missing objects and idempotent indexes.
+
+## SQL Server with Docker Compose
+
+```powershell
+docker compose up --build
+```
+
+The web container selects SQL Server through `DatabaseProvider=SqlServer`, waits for the SQL Server health check, and applies the repeatable EF migration history. For Visual Studio/LocalDB, set `DatabaseProvider=SqlServer` and configure `ConnectionStrings:SqlServer` in user secrets or environment variables.
+
+## Features
+
+- Identity authentication plus Admin, Manager, and Staff authorization.
+- Normalized dishes, ingredients, recipes, attendance, calendar events, forecasts, service actuals, and waste records.
+- Unique constraints, non-negative quantity/cost validation, duplicate conflict responses, and safe soft-delete for dishes.
+- Statistical forecast using weighted moving average, weekday adjustment, calendar-event adjustment, MAE, MAPE, and confidence.
+- Responsive dashboard and operations tables designed for tablet service capture.
+- Authorized REST CRUD: `/api/dishes`, `/api/ingredients`, `/api/attendance`, `/api/events`, `/api/actuals`, `/api/waste`; forecast and reporting endpoints are also available.
+- Postman examples in `postman/MessForecast.postman_collection.json`.
+- Source documentation and syllabus mapping in `docs/`.
+
+## Database migrations
+
+The migration policy is documented in `Data/Migrations/README.md`. Before applying migrations to an existing SQL Server database, take a backup and inspect migration history. Do not delete the database to resolve a migration conflict.
+
+## Validation
+
+```powershell
+dotnet build web_ca_3.csproj
+dotnet test Tests\Tests.csproj
+```
+
+See `docs/ARCHITECTURE.md` and `docs/SYLLABUS-MAPPING.md` for the source map and coverage evidence.

@@ -10,7 +10,7 @@ public class MenuDish
     public int Id { get; set; }
     [Required, StringLength(120)] public string Name { get; set; } = string.Empty;
     [StringLength(40)] public string Category { get; set; } = "Main";
-    public int Calories { get; set; }
+    [Range(0, 10000)] public int Calories { get; set; }
     public bool IsActive { get; set; } = true;
     public ICollection<RecipeIngredient> Ingredients { get; set; } = new List<RecipeIngredient>();
 }
@@ -20,8 +20,8 @@ public class Ingredient
     public int Id { get; set; }
     [Required, StringLength(120)] public string Name { get; set; } = string.Empty;
     [StringLength(20)] public string Unit { get; set; } = "kg";
-    public decimal UnitCost { get; set; }
-    public decimal CurrentStock { get; set; }
+    [Range(typeof(decimal), "0", "1000000")] public decimal UnitCost { get; set; }
+    [Range(typeof(decimal), "0", "1000000")] public decimal CurrentStock { get; set; }
     public ICollection<RecipeIngredient> Recipes { get; set; } = new List<RecipeIngredient>();
 }
 
@@ -32,7 +32,7 @@ public class RecipeIngredient
     public MenuDish MenuDish { get; set; } = null!;
     public int IngredientId { get; set; }
     public Ingredient Ingredient { get; set; } = null!;
-    public decimal QuantityPerServing { get; set; }
+    [Range(typeof(decimal), "0.0001", "1000000")] public decimal QuantityPerServing { get; set; }
 }
 
 public class AttendanceRecord
@@ -69,8 +69,8 @@ public class ServiceActual
     public int Id { get; set; }
     public DateTime ServiceDate { get; set; } = DateTime.Today;
     public MealType Meal { get; set; }
-    public int PreparedCount { get; set; }
-    public int ServedCount { get; set; }
+    [Range(0, 100000)] public int PreparedCount { get; set; }
+    [Range(0, 100000)] public int ServedCount { get; set; }
     public int LeftoverCount { get; set; }
 }
 
@@ -82,8 +82,8 @@ public class WasteRecord
     public Ingredient? Ingredient { get; set; }
     public int? MenuDishId { get; set; }
     public MenuDish? MenuDish { get; set; }
-    public decimal Quantity { get; set; }
-    public decimal UnitCost { get; set; }
+    [Range(typeof(decimal), "0.0001", "1000000")] public decimal Quantity { get; set; }
+    [Range(typeof(decimal), "0", "1000000")] public decimal UnitCost { get; set; }
     public WasteReason Reason { get; set; }
     [StringLength(300)] public string? Notes { get; set; }
     public decimal Cost => Quantity * UnitCost;
