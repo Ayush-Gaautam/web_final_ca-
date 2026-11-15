@@ -6,9 +6,9 @@ public sealed record ForecastResult(DateTime Date, MealType Meal, int Forecast, 
 
 public sealed class ForecastingService
 {
-    public ForecastResult Analyze(IEnumerable<AttendanceRecord> history, IEnumerable<CalendarEvent> events, DateTime date, MealType meal)
+    public ForecastResult Analyze(IEnumerable<AttendanceRecord> history, IEnumerable<CalendarEvent> events, DateTime date, MealType meal, int? hallId = null)
     {
-        var records = history.Where(x => x.Meal == meal && x.ServiceDate.Date < date.Date)
+        var records = history.Where(x => x.Meal == meal && x.ServiceDate.Date < date.Date && (!hallId.HasValue || x.HallId == hallId))
             .OrderByDescending(x => x.ServiceDate).Take(28).ToArray();
         var samples = records.Select(x => x.ActualCount > 0 ? x.ActualCount : x.ExpectedCount).ToArray();
         var weekdaySamples = records.Where(x => x.ServiceDate.DayOfWeek == date.DayOfWeek)
@@ -24,8 +24,8 @@ public sealed class ForecastingService
         return new ForecastResult(date.Date, meal, forecast, confidence, mae, mape, "Weighted moving average + weekday/event adjustments");
     }
 
-    public int Forecast(IEnumerable<AttendanceRecord> history, IEnumerable<CalendarEvent> events, DateTime date, MealType meal) =>
-        Analyze(history, events, date, meal).Forecast;
+    public int Forecast(IEnumerable<AttendanceRecord> history, IEnumerable<CalendarEvent> events, DateTime date, MealType meal, int? hallId = null) =>
+        Analyze(history, events, date, meal, hallId).Forecast;
 
     public decimal Confidence(int sampleCount) => Math.Min(0.98m, 0.50m + sampleCount * 0.015m);
 

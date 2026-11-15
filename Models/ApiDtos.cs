@@ -25,6 +25,7 @@ public sealed class AttendanceRequest
 {
     public DateTime ServiceDate { get; set; } = DateTime.Today;
     public MealType Meal { get; set; }
+    public int? HallId { get; set; }
     [Range(0, 100000)] public int ExpectedCount { get; set; }
     [Range(0, 100000)] public int ActualCount { get; set; }
     [StringLength(200)] public string? Notes { get; set; }
@@ -42,6 +43,7 @@ public sealed class ActualRequest
 {
     public DateTime ServiceDate { get; set; } = DateTime.Today;
     public MealType Meal { get; set; }
+    public int? HallId { get; set; }
     [Range(0, 100000)] public int PreparedCount { get; set; }
     [Range(0, 100000)] public int ServedCount { get; set; }
 }
@@ -49,6 +51,7 @@ public sealed class ActualRequest
 public sealed class WasteRequest
 {
     public DateTime WasteDate { get; set; } = DateTime.Today;
+    public MealType? Meal { get; set; }
     public int? IngredientId { get; set; }
     public int? MenuDishId { get; set; }
     [Range(typeof(decimal), "0.0001", "1000000")] public decimal Quantity { get; set; }
@@ -60,6 +63,7 @@ public sealed class BookingRequest
 {
     public DateTime BookingDate { get; set; } = DateTime.Today;
     public MealType Meal { get; set; }
+    public int? HallId { get; set; }
 }
 
 public sealed class FeedbackRequest

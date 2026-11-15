@@ -26,6 +26,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddScoped<ForecastingService>();
 builder.Services.AddScoped<PlanningService>();
+builder.Services.AddScoped<WasteAnalyticsService>();
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
@@ -59,6 +60,9 @@ app.MapRazorPages()
    .WithStaticAssets();
 
 using (var scope = app.Services.CreateScope())
+{
     await DbInitializer.InitializeAsync(scope.ServiceProvider);
+    await DevelopmentDataSeeder.InitializeAsync(scope.ServiceProvider, app.Environment);
+}
 
 app.Run();

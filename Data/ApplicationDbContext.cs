@@ -17,6 +17,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Hall> Halls => Set<Hall>();
     public DbSet<MealBooking> MealBookings => Set<MealBooking>();
     public DbSet<Feedback> Feedback => Set<Feedback>();
+    public DbSet<PreparationPlan> PreparationPlans => Set<PreparationPlan>();
+    public DbSet<PreparationPlanLine> PreparationPlanLines => Set<PreparationPlanLine>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -24,9 +26,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<RecipeIngredient>().HasIndex(x => new { x.MenuDishId, x.IngredientId }).IsUnique();
         builder.Entity<Ingredient>().HasIndex(x => x.Name).IsUnique();
         builder.Entity<MenuDish>().HasIndex(x => x.Name).IsUnique();
-        builder.Entity<AttendanceRecord>().HasIndex(x => new { x.ServiceDate, x.Meal }).IsUnique();
-        builder.Entity<ForecastRecord>().HasIndex(x => new { x.ForecastDate, x.Meal }).IsUnique();
-        builder.Entity<ServiceActual>().HasIndex(x => new { x.ServiceDate, x.Meal }).IsUnique();
+        builder.Entity<AttendanceRecord>().HasIndex(x => new { x.ServiceDate, x.Meal, x.HallId }).IsUnique();
+        builder.Entity<ForecastRecord>().HasIndex(x => new { x.ForecastDate, x.Meal, x.HallId }).IsUnique();
+        builder.Entity<ServiceActual>().HasIndex(x => new { x.ServiceDate, x.Meal, x.HallId }).IsUnique();
         builder.Entity<Hall>().HasIndex(x => x.Name).IsUnique();
         builder.Entity<MealBooking>().HasIndex(x => new { x.StudentEmail, x.BookingDate, x.Meal }).IsUnique();
         builder.Entity<Ingredient>().ToTable(t => t.HasCheckConstraint("CK_Ingredients_UnitCost", "[UnitCost] >= 0"));
@@ -39,5 +41,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<RecipeIngredient>().Property(x => x.QuantityPerServing).HasPrecision(18, 3);
         builder.Entity<WasteRecord>().Property(x => x.Quantity).HasPrecision(18, 3);
         builder.Entity<ForecastRecord>().Property(x => x.Confidence).HasPrecision(5, 2);
+        builder.Entity<PreparationPlan>().HasIndex(x => new { x.PlanDate, x.Meal, x.HallId }).IsUnique();
+        builder.Entity<PreparationPlan>().Property(x => x.SafetyMarginPercent).HasPrecision(5, 2);
+        builder.Entity<PreparationPlanLine>().Property(x => x.RequiredQuantity).HasPrecision(18, 3);
+        builder.Entity<PreparationPlanLine>().Property(x => x.AvailableQuantity).HasPrecision(18, 3);
+        builder.Entity<PreparationPlanLine>().Property(x => x.ShortageQuantity).HasPrecision(18, 3);
     }
 }

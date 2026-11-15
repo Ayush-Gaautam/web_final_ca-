@@ -41,6 +41,8 @@ public class AttendanceRecord
     public int Id { get; set; }
     public DateTime ServiceDate { get; set; } = DateTime.Today;
     public MealType Meal { get; set; }
+    public int? HallId { get; set; }
+    public Hall? Hall { get; set; }
     [Range(0, 100000)] public int ExpectedCount { get; set; }
     [Range(0, 100000)] public int ActualCount { get; set; }
     [StringLength(200)] public string? Notes { get; set; }
@@ -60,6 +62,8 @@ public class ForecastRecord
     public int Id { get; set; }
     public DateTime ForecastDate { get; set; } = DateTime.Today;
     public MealType Meal { get; set; }
+    public int? HallId { get; set; }
+    public Hall? Hall { get; set; }
     public int ForecastCount { get; set; }
     public decimal Confidence { get; set; }
     [StringLength(300)] public string Method { get; set; } = "Weighted moving average";
@@ -70,6 +74,8 @@ public class ServiceActual
     public int Id { get; set; }
     public DateTime ServiceDate { get; set; } = DateTime.Today;
     public MealType Meal { get; set; }
+    public int? HallId { get; set; }
+    public Hall? Hall { get; set; }
     [Range(0, 100000)] public int PreparedCount { get; set; }
     [Range(0, 100000)] public int ServedCount { get; set; }
     public int LeftoverCount { get; set; }
@@ -79,6 +85,7 @@ public class WasteRecord
 {
     public int Id { get; set; }
     public DateTime WasteDate { get; set; } = DateTime.Today;
+    public MealType? Meal { get; set; }
     public int? IngredientId { get; set; }
     public Ingredient? Ingredient { get; set; }
     public int? MenuDishId { get; set; }
@@ -104,6 +111,8 @@ public class MealBooking
     [Required, StringLength(256)] public string StudentEmail { get; set; } = string.Empty;
     public DateTime BookingDate { get; set; } = DateTime.Today;
     public MealType Meal { get; set; }
+    public int? HallId { get; set; }
+    public Hall? Hall { get; set; }
     public BookingStatus Status { get; set; } = BookingStatus.Booked;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
@@ -115,4 +124,29 @@ public class Feedback
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
     [Range(1, 5)] public int Rating { get; set; }
     [Required, StringLength(1000)] public string Comment { get; set; } = string.Empty;
+}
+
+public class PreparationPlan
+{
+    public int Id { get; set; }
+    public DateTime PlanDate { get; set; } = DateTime.Today;
+    public MealType Meal { get; set; }
+    public int? HallId { get; set; }
+    public Hall? Hall { get; set; }
+    public int PredictedServings { get; set; }
+    public decimal SafetyMarginPercent { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public ICollection<PreparationPlanLine> Lines { get; set; } = new List<PreparationPlanLine>();
+}
+
+public class PreparationPlanLine
+{
+    public int Id { get; set; }
+    public int PreparationPlanId { get; set; }
+    public PreparationPlan PreparationPlan { get; set; } = null!;
+    public int IngredientId { get; set; }
+    public Ingredient Ingredient { get; set; } = null!;
+    public decimal RequiredQuantity { get; set; }
+    public decimal AvailableQuantity { get; set; }
+    public decimal ShortageQuantity { get; set; }
 }

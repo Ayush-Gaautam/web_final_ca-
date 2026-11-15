@@ -17,9 +17,17 @@ public static class DbInitializer
             await EnsureSqliteDomainSchemaAsync(db);
             await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_Ingredients_Name ON Ingredients(Name);");
             await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_MenuDishes_Name ON MenuDishes(Name);");
-            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_AttendanceRecords_ServiceDate_Meal ON AttendanceRecords(ServiceDate, Meal);");
-            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ServiceActuals_ServiceDate_Meal ON ServiceActuals(ServiceDate, Meal);");
-            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ForecastRecords_ForecastDate_Meal ON ForecastRecords(ForecastDate, Meal);");
+            await db.Database.ExecuteSqlRawAsync("DROP INDEX IF EXISTS IX_AttendanceRecords_ServiceDate_Meal;");
+            await db.Database.ExecuteSqlRawAsync("DROP INDEX IF EXISTS IX_ServiceActuals_ServiceDate_Meal;");
+            await db.Database.ExecuteSqlRawAsync("DROP INDEX IF EXISTS IX_ForecastRecords_ForecastDate_Meal;");
+            await AddSqliteColumnIfMissingAsync(db, "AttendanceRecords", "HallId", "INTEGER NULL");
+            await AddSqliteColumnIfMissingAsync(db, "ForecastRecords", "HallId", "INTEGER NULL");
+            await AddSqliteColumnIfMissingAsync(db, "ServiceActuals", "HallId", "INTEGER NULL");
+            await AddSqliteColumnIfMissingAsync(db, "MealBookings", "HallId", "INTEGER NULL");
+            await AddSqliteColumnIfMissingAsync(db, "WasteRecords", "Meal", "INTEGER NULL");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_AttendanceRecords_ServiceDate_Meal_HallId ON AttendanceRecords(ServiceDate, Meal, HallId);");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ForecastRecords_ForecastDate_Meal_HallId ON ForecastRecords(ForecastDate, Meal, HallId);");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ServiceActuals_ServiceDate_Meal_HallId ON ServiceActuals(ServiceDate, Meal, HallId);");
         }
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var role in new[] { "Admin", "Manager", "Staff", "Student", "KitchenStaff" })
@@ -126,7 +134,7 @@ public static class DbInitializer
                 """
                 CREATE TABLE IF NOT EXISTS WasteRecords (
                     Id INTEGER NOT NULL CONSTRAINT PK_WasteRecords PRIMARY KEY AUTOINCREMENT,
-                    WasteDate TEXT NOT NULL, IngredientId INTEGER NULL, MenuDishId INTEGER NULL, Quantity decimal(18,3) NOT NULL,
+                    WasteDate TEXT NOT NULL, Meal INTEGER NULL, IngredientId INTEGER NULL, MenuDishId INTEGER NULL, Quantity decimal(18,3) NOT NULL,
                     UnitCost decimal(18,2) NOT NULL, Reason INTEGER NOT NULL, Notes TEXT NULL,
                     CONSTRAINT FK_WasteRecords_Ingredients_IngredientId FOREIGN KEY (IngredientId) REFERENCES Ingredients(Id) ON DELETE SET NULL,
                     CONSTRAINT FK_WasteRecords_MenuDishes_MenuDishId FOREIGN KEY (MenuDishId) REFERENCES MenuDishes(Id) ON DELETE SET NULL
@@ -150,11 +158,36 @@ public static class DbInitializer
                     Id INTEGER NOT NULL CONSTRAINT PK_Feedback PRIMARY KEY AUTOINCREMENT,
                     StudentEmail TEXT NOT NULL, SubmittedAt TEXT NOT NULL, Rating INTEGER NOT NULL, Comment TEXT NOT NULL
                 );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS PreparationPlans (
+                    Id INTEGER NOT NULL CONSTRAINT PK_PreparationPlans PRIMARY KEY AUTOINCREMENT,
+                    PlanDate TEXT NOT NULL, Meal INTEGER NOT NULL, HallId INTEGER NULL,
+                    PredictedServings INTEGER NOT NULL, SafetyMarginPercent decimal(5,2) NOT NULL, CreatedAt TEXT NOT NULL,
+                    CONSTRAINT FK_PreparationPlans_Halls_HallId FOREIGN KEY (HallId) REFERENCES Halls(Id) ON DELETE SET NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS PreparationPlanLines (
+                    Id INTEGER NOT NULL CONSTRAINT PK_PreparationPlanLines PRIMARY KEY AUTOINCREMENT,
+                    PreparationPlanId INTEGER NOT NULL, IngredientId INTEGER NOT NULL,
+                    RequiredQuantity decimal(18,3) NOT NULL, AvailableQuantity decimal(18,3) NOT NULL, ShortageQuantity decimal(18,3) NOT NULL,
+                    CONSTRAINT FK_PreparationPlanLines_PreparationPlans_PreparationPlanId FOREIGN KEY (PreparationPlanId) REFERENCES PreparationPlans(Id) ON DELETE CASCADE,
+                    CONSTRAINT FK_PreparationPlanLines_Ingredients_IngredientId FOREIGN KEY (IngredientId) REFERENCES Ingredients(Id) ON DELETE CASCADE
+                );
                 """
             };
             foreach (var command in commands)
                 await db.Database.ExecuteSqlRawAsync(command);
             await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_Halls_Name ON Halls(Name);");
             await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_MealBookings_StudentEmail_BookingDate_Meal ON MealBookings(StudentEmail, BookingDate, Meal);");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_PreparationPlans_PlanDate_Meal_HallId ON PreparationPlans(PlanDate, Meal, HallId);");
         }
+
+    private static async Task AddSqliteColumnIfMissingAsync(ApplicationDbContext db, string table, string column, string definition)
+    {
+        var columns = await db.Database.SqlQueryRaw<string>($"SELECT name AS Value FROM pragma_table_info('{table}')").ToListAsync();
+        if (!columns.Contains(column, StringComparer.OrdinalIgnoreCase))
+            await db.Database.ExecuteSqlRawAsync($"ALTER TABLE {table} ADD COLUMN {column} {definition};");
+    }
     }

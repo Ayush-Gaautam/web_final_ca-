@@ -8,13 +8,13 @@ using web_ca_3.Services;
 namespace web_ca_3.Controllers;
 
 [ApiController, Authorize, Route("api")]
-public sealed class ApiController(ApplicationDbContext db, ForecastingService forecasting) : ControllerBase
+public sealed class ApiController(ApplicationDbContext db, ForecastingService forecasting, WasteAnalyticsService wasteAnalytics) : ControllerBase
 {
     [HttpGet("forecast")]
-    public async Task<ActionResult<ForecastResult>> Forecast(DateTime? date = null, MealType meal = MealType.Lunch)
+    public async Task<ActionResult<ForecastResult>> Forecast(DateTime? date = null, MealType meal = MealType.Lunch, int? hallId = null)
     {
         var target = date?.Date ?? DateTime.Today;
-        return Ok(forecasting.Analyze(await db.AttendanceRecords.AsNoTracking().ToListAsync(), await db.CalendarEvents.AsNoTracking().ToListAsync(), target, meal));
+        return Ok(forecasting.Analyze(await db.AttendanceRecords.AsNoTracking().ToListAsync(), await db.CalendarEvents.AsNoTracking().ToListAsync(), target, meal, hallId));
     }
 
     [HttpGet("forecast/metrics")]
@@ -109,7 +109,7 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
     public async Task<ActionResult<AttendanceRecord>> CreateAttendance(AttendanceRequest request)
     {
         if (await db.AttendanceRecords.AnyAsync(x => x.ServiceDate.Date == request.ServiceDate.Date && x.Meal == request.Meal)) return Conflict("Attendance already exists for this service.");
-        var record = new AttendanceRecord { ServiceDate = request.ServiceDate.Date, Meal = request.Meal, ExpectedCount = request.ExpectedCount, ActualCount = request.ActualCount, Notes = request.Notes };
+        var record = new AttendanceRecord { ServiceDate = request.ServiceDate.Date, Meal = request.Meal, HallId = request.HallId, ExpectedCount = request.ExpectedCount, ActualCount = request.ActualCount, Notes = request.Notes };
         db.AttendanceRecords.Add(record); await db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAttendance), null, record);
     }
@@ -118,7 +118,7 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
     public async Task<IActionResult> UpdateAttendance(int id, AttendanceRequest request)
     {
         var record = await db.AttendanceRecords.FindAsync(id); if (record is null) return NotFound();
-        record.ServiceDate = request.ServiceDate.Date; record.Meal = request.Meal; record.ExpectedCount = request.ExpectedCount; record.ActualCount = request.ActualCount; record.Notes = request.Notes;
+        record.ServiceDate = request.ServiceDate.Date; record.Meal = request.Meal; record.HallId = request.HallId; record.ExpectedCount = request.ExpectedCount; record.ActualCount = request.ActualCount; record.Notes = request.Notes;
         await db.SaveChangesAsync(); return NoContent();
     }
 
@@ -152,7 +152,7 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
     [HttpPost("actuals"), Authorize(Roles = "Admin,Manager,Staff")]
     public async Task<ActionResult<ServiceActual>> CreateActual(ActualRequest request)
     {
-        var item = new ServiceActual { ServiceDate = request.ServiceDate.Date, Meal = request.Meal, PreparedCount = request.PreparedCount, ServedCount = request.ServedCount, LeftoverCount = Math.Max(0, request.PreparedCount - request.ServedCount) };
+        var item = new ServiceActual { ServiceDate = request.ServiceDate.Date, Meal = request.Meal, HallId = request.HallId, PreparedCount = request.PreparedCount, ServedCount = request.ServedCount, LeftoverCount = Math.Max(0, request.PreparedCount - request.ServedCount) };
         db.ServiceActuals.Add(item); await db.SaveChangesAsync(); return CreatedAtAction(nameof(GetActuals), null, item);
     }
 
@@ -160,7 +160,7 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
     public async Task<IActionResult> UpdateActual(int id, ActualRequest request)
     {
         var item = await db.ServiceActuals.FindAsync(id); if (item is null) return NotFound();
-        item.ServiceDate = request.ServiceDate.Date; item.Meal = request.Meal; item.PreparedCount = request.PreparedCount; item.ServedCount = request.ServedCount; item.LeftoverCount = Math.Max(0, request.PreparedCount - request.ServedCount);
+        item.ServiceDate = request.ServiceDate.Date; item.Meal = request.Meal; item.HallId = request.HallId; item.PreparedCount = request.PreparedCount; item.ServedCount = request.ServedCount; item.LeftoverCount = Math.Max(0, request.PreparedCount - request.ServedCount);
         await db.SaveChangesAsync(); return NoContent();
     }
 
@@ -181,7 +181,7 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
             ? await db.Ingredients.Where(x => x.Id == ingredientId).Select(x => (decimal?)x.UnitCost).SingleOrDefaultAsync()
             : 0;
         if (request.IngredientId is not null && unitCost is null) return BadRequest("Ingredient not found.");
-        var item = new WasteRecord { WasteDate = request.WasteDate.Date, IngredientId = request.IngredientId, MenuDishId = request.MenuDishId, Quantity = request.Quantity, UnitCost = unitCost ?? 0, Reason = request.Reason, Notes = request.Notes };
+        var item = new WasteRecord { WasteDate = request.WasteDate.Date, Meal = request.Meal, IngredientId = request.IngredientId, MenuDishId = request.MenuDishId, Quantity = request.Quantity, UnitCost = unitCost ?? 0, Reason = request.Reason, Notes = request.Notes };
         db.WasteRecords.Add(item); await db.SaveChangesAsync(); return CreatedAtAction(nameof(GetWaste), null, item);
     }
 
@@ -189,7 +189,7 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
     public async Task<IActionResult> UpdateWaste(int id, WasteRequest request)
     {
         var item = await db.WasteRecords.FindAsync(id); if (item is null) return NotFound();
-        item.WasteDate = request.WasteDate.Date; item.IngredientId = request.IngredientId; item.MenuDishId = request.MenuDishId; item.Quantity = request.Quantity; item.Reason = request.Reason; item.Notes = request.Notes;
+        item.WasteDate = request.WasteDate.Date; item.Meal = request.Meal; item.IngredientId = request.IngredientId; item.MenuDishId = request.MenuDishId; item.Quantity = request.Quantity; item.Reason = request.Reason; item.Notes = request.Notes;
         if (request.IngredientId is int ingredientId) item.UnitCost = await db.Ingredients.Where(x => x.Id == ingredientId).Select(x => x.UnitCost).SingleOrDefaultAsync();
         await db.SaveChangesAsync(); return NoContent();
     }
@@ -226,7 +226,7 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
         var email = User.Identity!.Name!;
         if (await db.MealBookings.AnyAsync(x => x.StudentEmail == email && x.BookingDate == request.BookingDate.Date && x.Meal == request.Meal && x.Status == BookingStatus.Booked))
             return Conflict("This meal is already booked.");
-        var booking = new MealBooking { StudentEmail = email, BookingDate = request.BookingDate.Date, Meal = request.Meal };
+        var booking = new MealBooking { StudentEmail = email, BookingDate = request.BookingDate.Date, Meal = request.Meal, HallId = request.HallId };
         db.MealBookings.Add(booking); await db.SaveChangesAsync();
         return Ok(booking);
     }
@@ -246,6 +246,24 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
         var feedback = new Feedback { StudentEmail = User.Identity!.Name!, Rating = request.Rating, Comment = request.Comment.Trim() };
         db.Feedback.Add(feedback); await db.SaveChangesAsync(); return Ok(feedback);
     }
+
+    [HttpGet("reports/waste")]
+    public async Task<IActionResult> WasteReport(DateTime? from = null, DateTime? to = null, MealType? meal = null)
+    {
+        var end = (to ?? DateTime.Today).Date;
+        var start = (from ?? end.AddDays(-6)).Date;
+        return Ok(new
+        {
+            summary = await wasteAnalytics.SummaryAsync(start, end, meal),
+            byDish = await wasteAnalytics.ByDishAsync(start, end),
+            byMeal = await wasteAnalytics.ByMealAsync(start, end)
+        });
+    }
+
+    [HttpGet("preparation-plans")]
+    public async Task<IActionResult> GetPreparationPlans() =>
+        Ok(await db.PreparationPlans.AsNoTracking().Include(x => x.Hall).Include(x => x.Lines).ThenInclude(x => x.Ingredient)
+            .OrderByDescending(x => x.PlanDate).Take(30).ToListAsync());
 
     private static async Task<IActionResult> RemoveAsync<TEntity>(ApplicationDbContext db, DbSet<TEntity> set, int id) where TEntity : class
     {
