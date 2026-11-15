@@ -31,8 +31,10 @@ body {
 .navbar .navbar-brand, .navbar .nav-link, .navbar .btn-link { color: #fff !important; }
 .navbar .nav-link { margin-right: .4rem; border-radius: .55rem; }
 .navbar .nav-link:hover { background: rgba(255,255,255,.15); }
+.navbar-nav { align-items: center; }
 .app-shell { min-height: calc(100vh - 130px); }
 .hero-card { border: 0; border-radius: 1.25rem; color: #fff; background: linear-gradient(120deg, #2563eb, #7c3aed); box-shadow: 0 16px 35px rgba(37,99,235,.22); }
+.hero-copy { min-width: 0; }
 .metric-card { border: 0; border-radius: 1rem; box-shadow: 0 8px 24px rgba(30,41,59,.08); overflow: hidden; }
 .metric-card .metric-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: .8rem; font-weight: 800; }
 .metric-blue { border-top: 4px solid #2563eb; } .metric-blue .metric-icon { background:#dbeafe; color:#1d4ed8; }
@@ -45,6 +47,11 @@ body {
 .quick-action:hover { transform: translateY(-2px); background:#eef2ff; border-color:#818cf8; color:#312e81; }
 .role-pill { border-radius:999px; padding:.45rem .8rem; font-size:.8rem; font-weight:700; background:rgba(255,255,255,.18); }
 .empty-state { padding:2.5rem 1rem; text-align:center; color:#64748b; }
+@media (max-width: 575.98px) {
+  .hero-card { padding: 1.25rem !important; }
+  .hero-card .text-end { text-align: left !important; }
+  .navbar-nav { align-items: stretch; }
+}
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);

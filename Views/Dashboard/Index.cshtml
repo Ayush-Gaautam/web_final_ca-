@@ -2,13 +2,13 @@
 @using web_ca_3.Models
 @inject web_ca_3.Data.ApplicationDbContext Db
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "MessForecast Dashboard";
     var ingredients = Db.Ingredients.OrderBy(x => x.Name).ToList();
     var role = User.IsInRole("Admin") ? "Administrator" : User.IsInRole("Manager") ? "Manager" : User.IsInRole("KitchenStaff") ? "Kitchen staff" : User.IsInRole("Staff") ? "Staff" : "Student";
 }
 <div class="hero-card p-4 p-lg-5 mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div><div class="text-white-50 mb-2">Welcome back, @User.Identity?.Name</div><h1 class="display-6 fw-bold mb-2">@role dashboard</h1><p class="mb-0 text-white-50">Everything your mess team needs for today’s service.</p></div>
+        <div class="hero-copy"><div class="text-white-50 mb-2 text-truncate">Welcome back, @User.Identity?.Name</div><h1 class="display-6 fw-bold mb-2">@role dashboard</h1><p class="mb-0 text-white-50">Everything your mess team needs for today’s service.</p></div>
         <div class="text-end"><div class="role-pill mb-2">@role</div><div class="small text-white-50">@DateTime.Today.ToString("dddd, dd MMMM yyyy")</div></div>
     </div>
 </div>
@@ -20,7 +20,7 @@
 </div>
 <div class="row g-4">
     <div class="col-lg-8">
-        <div class="card dashboard-card mb-4"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-3"><div><h5 class="mb-1">Forecast quality</h5><small class="text-muted">Statistical model performance</small></div><span class="badge text-bg-primary">Live</span></div>
+        <div id="forecast-quality" class="card dashboard-card mb-4"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-3"><div><h5 class="mb-1">Mess demand forecast</h5><small class="text-muted">Statistical model performance for today's service</small></div><span class="badge text-bg-primary">Live</span></div>
             <div class="row g-3"><div class="col-4"><div class="text-muted small">MAE</div><div class="fs-3 fw-bold">@Model.ForecastMae</div></div><div class="col-4"><div class="text-muted small">MAPE</div><div class="fs-3 fw-bold">@Model.ForecastMape%</div></div><div class="col-4"><div class="text-muted small">Method</div><div class="fw-semibold mt-2">Weekday + events</div></div></div>
             <div class="progress mt-4" style="height:10px"><div class="progress-bar bg-success" style="width:@((int)(Model.ForecastConfidence * 100))%"></div></div>
         </div></div>
@@ -33,7 +33,7 @@
             <a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-primary-subtle text-primary">+</span><span><strong>Open operations</strong><small class="d-block text-muted">Forms and service data</small></span></a>
             @if (User.IsInRole("Student")) { <a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-success-subtle text-success">B</span><span><strong>Book a meal</strong><small class="d-block text-muted">Reserve before cutoff</small></span></a> }
             @if (User.IsInRole("Admin")) { <a class="quick-action" asp-controller="Admin" asp-action="Index"><span class="metric-icon bg-danger-subtle text-danger">A</span><span><strong>Admin centre</strong><small class="d-block text-muted">Users and halls</small></span></a> }
-            <a class="quick-action" href="/api/forecast"><span class="metric-icon bg-warning-subtle text-warning">↗</span><span><strong>Forecast data</strong><small class="d-block text-muted">JSON endpoint</small></span></a>
+            <a class="quick-action" href="#forecast-quality"><span class="metric-icon bg-warning-subtle text-warning">F</span><span><strong>View forecast</strong><small class="d-block text-muted">See accuracy and confidence</small></span></a>
         </div></div></div>
         <div class="card dashboard-card"><div class="card-body"><h5 class="mb-3">Stock watch</h5>@foreach (var item in ingredients.Take(5)) { var width = Math.Min(100, (double)item.CurrentStock / 40 * 100); <div class="mb-3"><div class="d-flex justify-content-between small"><span>@item.Name</span><span class="text-muted">@item.CurrentStock @item.Unit</span></div><div class="progress" style="height:7px"><div class="progress-bar @(item.CurrentStock < 5 ? "bg-danger" : "bg-info")" style="width:@width%"></div></div></div> }</div></div>
     </div>
