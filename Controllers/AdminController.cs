@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using web_ca_3.Data;
 using web_ca_3.Models;
+using web_ca_3.Security;
 
 namespace web_ca_3.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = RoleNames.MessAdministrator + "," + RoleNames.SystemAdministrator + ",Admin")]
 public sealed class AdminController(ApplicationDbContext db, UserManager<IdentityUser> users) : Controller
 {
     public async Task<IActionResult> Index() => View(new AdminViewModel

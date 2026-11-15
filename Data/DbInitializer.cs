@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using web_ca_3.Models;
+using web_ca_3.Security;
 
 namespace web_ca_3.Data;
 
@@ -30,7 +31,7 @@ public static class DbInitializer
             await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ServiceActuals_ServiceDate_Meal_HallId ON ServiceActuals(ServiceDate, Meal, HallId);");
         }
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "Admin", "Manager", "Staff", "Student", "KitchenStaff" })
+        foreach (var role in new[] { "Admin", "Manager", "Staff", "Student", "KitchenStaff" }.Concat(RoleNames.All))
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
 
@@ -39,10 +40,14 @@ public static class DbInitializer
         await EnsureUserAsync(userManager, "manager@mess.local", "Manager123!", "Manager");
         await EnsureUserAsync(userManager, "kitchen@mess.local", "Kitchen123!", "KitchenStaff");
         await EnsureUserAsync(userManager, "student@mess.local", "Student123!", "Student");
+        await EnsureUserAsync(userManager, "messadmin@mess.local", "MessAdmin123!", RoleNames.MessAdministrator);
+        await EnsureUserAsync(userManager, "finance@mess.local", "Finance123!", RoleNames.FinanceOfficer);
+        await EnsureUserAsync(userManager, "sysadmin@mess.local", "SysAdmin123!", RoleNames.SystemAdministrator);
+        await EnsureUserAsync(userManager, "admin@mess.local", "Admin123!", RoleNames.SystemAdministrator);
+        await EnsureUserAsync(userManager, "manager@mess.local", "Manager123!", RoleNames.MessManager);
+        await EnsureUserAsync(userManager, "kitchen@mess.local", "Kitchen123!", RoleNames.KitchenStaff);
         foreach (var user in await userManager.Users.ToListAsync())
-            if (!await userManager.IsInRoleAsync(user, "Admin") && !await userManager.IsInRoleAsync(user, "Manager") &&
-                !await userManager.IsInRoleAsync(user, "Staff") && !await userManager.IsInRoleAsync(user, "Student") &&
-                !await userManager.IsInRoleAsync(user, "KitchenStaff"))
+            if (!await HasAnyRoleAsync(userManager, user, RoleNames.All.Concat(new[] { "Admin", "Manager", "Staff" })))
                 await userManager.AddToRoleAsync(user, "Student");
 
         if (await db.MenuDishes.AnyAsync()) return;
@@ -79,8 +84,17 @@ public static class DbInitializer
             if (!result.Succeeded)
                 throw new InvalidOperationException(string.Join("; ", result.Errors.Select(x => x.Description)));
         }
+
         if (!await userManager.IsInRoleAsync(user, role))
             await userManager.AddToRoleAsync(user, role);
+    }
+
+    private static async Task<bool> HasAnyRoleAsync(UserManager<IdentityUser> userManager, IdentityUser user, IEnumerable<string> roles)
+    {
+        foreach (var role in roles)
+            if (await userManager.IsInRoleAsync(user, role))
+                return true;
+        return false;
     }
 
     private static async Task EnsureSqliteDomainSchemaAsync(ApplicationDbContext db)

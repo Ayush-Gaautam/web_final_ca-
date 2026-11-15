@@ -17,8 +17,33 @@ Demo logins:
 - Manager: `manager@mess.local` / `Manager123!`
 - Kitchen staff: `kitchen@mess.local` / `Kitchen123!`
 - Student: `student@mess.local` / `Student123!`
+- Mess administrator: `messadmin@mess.local` / `MessAdmin123!`
+- Finance officer: `finance@mess.local` / `Finance123!`
+- System administrator: `sysadmin@mess.local` / `SysAdmin123!`
 
 After startup: dashboard `/`, operations `/Operations`, admin `/Admin`, Identity login `/Identity/Account/Login`, forecast API `/api/forecast`, and Swagger-free API collection examples in `postman/MessForecast.postman_collection.json`.
+
+Each account is redirected to a separate server-authorized dashboard:
+
+- `/RoleDashboards/Student`
+- `/RoleDashboards/KitchenStaff`
+- `/RoleDashboards/MessManager`
+- `/RoleDashboards/MessAdministrator`
+- `/RoleDashboards/FinanceOfficer`
+- `/RoleDashboards/SystemAdministrator`
+
+### Role comparison
+
+| Role | Main dashboard responsibility | Distinguishing project capability |
+|---|---|---|
+| Student | Book meals, view menus, review attendance | Student demand signals feed forecasting |
+| Kitchen Staff | Attendance, preparation, service actuals, waste | Tablet-friendly operational capture |
+| Mess Manager | Forecast review and preparation planning | Confidence, MAE/MAPE and recipe-driven quantities |
+| Mess Administrator | Users, halls, dishes and ingredients | Role-controlled master-data administration |
+| Finance Officer | Inventory and waste cost | Measurable waste cost and savings reporting |
+| System Administrator | Access, APIs and system activity | Authorized API/database health oversight |
+
+Unlike ordinary mess-management applications, this project combines demand forecasting with confidence/accuracy metrics, recipe-based ingredient planning, measurable waste costing, role-specific workflows, and an offline-ready attendance design path.
 
 In Development, startup adds a repeatable sample dataset only when the marker is absent: 30 days of attendance across two halls, dishes, shared recipes, bookings, events, forecasts, service actuals, waste, and a preparation plan. It never deletes existing rows. The current SQLite sample baseline is approximately 2 halls, 4 dishes, 7 ingredients, 183 attendance rows, 14 forecasts, 180 service actuals, 3 waste rows, 2 bookings, and 1 preparation plan with 4 ingredient lines.
 

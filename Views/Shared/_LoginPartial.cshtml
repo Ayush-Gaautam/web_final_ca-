@@ -5,7 +5,9 @@
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
-    <li class="nav-item"><span class="role-pill">@((User.IsInRole("Admin") ? "Admin" : User.IsInRole("Manager") ? "Manager" : User.IsInRole("KitchenStaff") ? "Kitchen staff" : User.IsInRole("Staff") ? "Staff" : "Student"))</span></li>
+    var currentRole = web_ca_3.Security.RoleResolver.Resolve(User);
+    var currentRoleName = web_ca_3.Security.RoleNames.DisplayName(currentRole);
+    <li class="nav-item"><span class="role-pill">@currentRoleName</span></li>
     <li class="nav-item">
         <a  class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @User.Identity?.Name!</a>
     </li>

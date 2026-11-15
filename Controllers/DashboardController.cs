@@ -4,13 +4,19 @@ using Microsoft.EntityFrameworkCore;
 using web_ca_3.Data;
 using web_ca_3.Models;
 using web_ca_3.Services;
+using web_ca_3.Security;
 
 namespace web_ca_3.Controllers;
 
 [Authorize]
 public class DashboardController(ApplicationDbContext db, ForecastingService forecasting) : Controller
 {
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
+    {
+        return RedirectToAction(RoleResolver.Resolve(User), "RoleDashboards");
+    }
+
+    private async Task<IActionResult> LegacyIndex()
     {
         var today = DateTime.Today;
         var result = forecasting.Analyze(await db.AttendanceRecords.ToListAsync(), await db.CalendarEvents.ToListAsync(), today, MealType.Lunch);

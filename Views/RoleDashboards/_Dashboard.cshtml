@@ -1,0 +1,56 @@
+@model web_ca_3.Controllers.RoleDashboardViewModel
+<div class="hero-card p-4 p-lg-5 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="hero-copy">
+            <div class="text-white-50 mb-2 text-truncate">Welcome back, @User.Identity?.Name</div>
+            <h1 class="display-6 fw-bold mb-2">@Model.RoleName dashboard</h1>
+            <p class="mb-1 text-white-50">@Model.Subtitle</p>
+            <p class="mb-0 text-white-50">@Model.Description</p>
+        </div>
+        <div class="text-end"><div class="role-pill mb-2">@Model.RoleName</div><div class="small text-white-50">@DateTime.Today.ToString("dddd, dd MMMM yyyy")</div></div>
+    </div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3"><div class="card metric-card metric-blue h-100"><div class="card-body"><span class="text-muted">Today's lunch forecast</span><div class="display-6 fw-bold mt-2">@Model.TodayForecast</div><small class="text-muted">@Model.ForecastConfidence.ToString("P0") confidence</small></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card metric-card metric-green h-100"><div class="card-body"><span class="text-muted">Active dishes</span><div class="display-6 fw-bold mt-2">@Model.ActiveDishes</div><small class="text-muted">menu items available</small></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card metric-card metric-orange h-100"><div class="card-body"><span class="text-muted">Inventory value</span><div class="display-6 fw-bold mt-2">₹@Model.IngredientValue.ToString("N0")</div><small class="text-muted">current stock</small></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card metric-card metric-red h-100"><div class="card-body"><span class="text-muted">Waste cost / 7 days</span><div class="display-6 fw-bold mt-2 text-danger">₹@Model.WasteCost.ToString("N0")</div><small class="text-muted">@Model.WastePercentage% of prepared quantity</small></div></div></div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card dashboard-card"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3"><div><h5 class="mb-1">Forecast quality</h5><small class="text-muted">MAE @Model.ForecastMae · MAPE @Model.ForecastMape%</small></div><span class="badge text-bg-primary">Live database data</span></div>
+            <div class="progress" style="height:10px"><div class="progress-bar bg-success" style="width:@((int)(Model.ForecastConfidence * 100))%"></div></div>
+        </div></div>
+        <div class="card dashboard-card mt-4"><div class="card-body"><h5>Role workflow</h5><div class="row g-3 mt-1">
+            @if (Model.RoleKey == "Student") {
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-success-subtle text-success">B</span><span><strong>Book a meal</strong><small class="d-block text-muted">Reserve or cancel</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-primary-subtle text-primary">M</span><span><strong>View menu</strong><small class="d-block text-muted">Available dishes</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" href="#attendance"><span class="metric-icon bg-warning-subtle text-warning">H</span><span><strong>History</strong><small class="d-block text-muted">Attendance and bookings</small></span></a></div>
+            } else if (Model.RoleKey == "KitchenStaff") {
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-success-subtle text-success">A</span><span><strong>Capture attendance</strong><small class="d-block text-muted">QR/manual service counts</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-primary-subtle text-primary">P</span><span><strong>Preparation</strong><small class="d-block text-muted">Ingredient guidance</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-danger-subtle text-danger">W</span><span><strong>Record waste</strong><small class="d-block text-muted">Quantity and reason</small></span></a></div>
+            } else if (Model.RoleKey == "MessManager") {
+                <div class="col-md-4"><a class="quick-action" href="#forecast"><span class="metric-icon bg-primary-subtle text-primary">F</span><span><strong>Review forecasts</strong><small class="d-block text-muted">Confidence and error</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-success-subtle text-success">P</span><span><strong>Plan preparation</strong><small class="d-block text-muted">Stock and shortages</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" href="/api/reports/waste"><span class="metric-icon bg-warning-subtle text-warning">R</span><span><strong>Waste report</strong><small class="d-block text-muted">Cost and percentage</small></span></a></div>
+            } else if (Model.RoleKey == "MessAdministrator") {
+                <div class="col-md-4"><a class="quick-action" asp-controller="Admin" asp-action="Index"><span class="metric-icon bg-danger-subtle text-danger">U</span><span><strong>Manage users</strong><small class="d-block text-muted">Accounts and roles</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" asp-controller="Admin" asp-action="Index"><span class="metric-icon bg-primary-subtle text-primary">H</span><span><strong>Manage halls</strong><small class="d-block text-muted">Capacity and status</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-success-subtle text-success">D</span><span><strong>Manage menu</strong><small class="d-block text-muted">Dishes and ingredients</small></span></a></div>
+            } else if (Model.RoleKey == "FinanceOfficer") {
+                <div class="col-md-4"><a class="quick-action" href="/api/reports/waste"><span class="metric-icon bg-danger-subtle text-danger">₹</span><span><strong>Cost reports</strong><small class="d-block text-muted">Waste and savings</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-warning-subtle text-warning">S</span><span><strong>Stock valuation</strong><small class="d-block text-muted">Ingredient inventory</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" href="/api/reports/waste"><span class="metric-icon bg-primary-subtle text-primary">E</span><span><strong>Export data</strong><small class="d-block text-muted">API-ready reports</small></span></a></div>
+            } else {
+                <div class="col-md-4"><a class="quick-action" asp-controller="Admin" asp-action="Index"><span class="metric-icon bg-danger-subtle text-danger">A</span><span><strong>System controls</strong><small class="d-block text-muted">Users and access</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" href="/api/forecast"><span class="metric-icon bg-primary-subtle text-primary">API</span><span><strong>API health</strong><small class="d-block text-muted">Authorized endpoints</small></span></a></div>
+                <div class="col-md-4"><a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-success-subtle text-success">DB</span><span><strong>Data activity</strong><small class="d-block text-muted">Persisted records</small></span></a></div>
+            }
+        </div></div></div>
+    </div>
+    <div class="col-lg-4">
+        <div id="attendance" class="card dashboard-card"><div class="card-body"><h5 class="mb-3">Live activity</h5><div class="d-flex justify-content-between border-bottom py-2"><span>Upcoming bookings</span><strong>@Model.Bookings</strong></div><div class="d-flex justify-content-between border-bottom py-2"><span>Attendance records / 7 days</span><strong>@Model.AttendanceRecords</strong></div><div class="d-flex justify-content-between py-2"><span>Forecast accuracy</span><strong>@Model.ForecastMape%</strong></div></div></div>
+    </div>
+</div>
