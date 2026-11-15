@@ -2,29 +2,39 @@
 @using web_ca_3.Models
 @inject web_ca_3.Data.ApplicationDbContext Db
 @{
-    ViewData["Title"] = "Mess operations dashboard";
+    ViewData["Title"] = "Dashboard";
     var ingredients = Db.Ingredients.OrderBy(x => x.Name).ToList();
+    var role = User.IsInRole("Admin") ? "Administrator" : User.IsInRole("Manager") ? "Manager" : User.IsInRole("KitchenStaff") ? "Kitchen staff" : User.IsInRole("Staff") ? "Staff" : "Student";
 }
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div><h1 class="display-6 fw-bold">Mess operations</h1><p class="text-muted mb-0">Demand, preparation and food-waste control in one place.</p></div>
-    <span class="badge text-bg-success px-3 py-2">Live planning</span>
+<div class="hero-card p-4 p-lg-5 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div><div class="text-white-50 mb-2">Welcome back, @User.Identity?.Name</div><h1 class="display-6 fw-bold mb-2">@role dashboard</h1><p class="mb-0 text-white-50">Everything your mess team needs for today’s service.</p></div>
+        <div class="text-end"><div class="role-pill mb-2">@role</div><div class="small text-white-50">@DateTime.Today.ToString("dddd, dd MMMM yyyy")</div></div>
+    </div>
 </div>
 <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Today's lunch forecast</div><div class="display-6 fw-bold">@Model.TodayForecast</div><small>@Model.ForecastConfidence.ToString("P0") confidence</small></div></div></div>
-    <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Active dishes</div><div class="display-6 fw-bold">@Model.ActiveDishes</div><small>menu items</small></div></div></div>
-    <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Ingredient stock value</div><div class="display-6 fw-bold">₹@Model.IngredientValue.ToString("N0")</div><small>current inventory</small></div></div></div>
-    <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><div class="text-muted">Waste this month</div><div class="display-6 fw-bold text-danger">₹@Model.WasteCostThisMonth.ToString("N0")</div><small>cost exposure</small></div></div></div>
-</div>
-<div class="alert alert-light border d-flex flex-wrap gap-4 align-items-center mb-4">
-    <strong>Forecast quality</strong><span>MAE: @Model.ForecastMae</span><span>MAPE: @Model.ForecastMape%</span><span>Weekday and calendar-event adjustments enabled</span>
+    <div class="col-sm-6 col-xl-3"><div class="card metric-card metric-blue h-100"><div class="card-body"><div class="d-flex justify-content-between"><span class="text-muted">Lunch forecast</span><span class="metric-icon">F</span></div><div class="display-6 fw-bold mt-2">@Model.TodayForecast</div><small class="text-muted">@Model.ForecastConfidence.ToString("P0") confidence</small></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card metric-card metric-green h-100"><div class="card-body"><div class="d-flex justify-content-between"><span class="text-muted">Active dishes</span><span class="metric-icon">D</span></div><div class="display-6 fw-bold mt-2">@Model.ActiveDishes</div><small class="text-muted">available menu items</small></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card metric-card metric-orange h-100"><div class="card-body"><div class="d-flex justify-content-between"><span class="text-muted">Stock value</span><span class="metric-icon">₹</span></div><div class="display-6 fw-bold mt-2">₹@Model.IngredientValue.ToString("N0")</div><small class="text-muted">current inventory</small></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card metric-card metric-red h-100"><div class="card-body"><div class="d-flex justify-content-between"><span class="text-muted">Waste this month</span><span class="metric-icon">W</span></div><div class="display-6 fw-bold mt-2 text-danger">₹@Model.WasteCostThisMonth.ToString("N0")</div><small class="text-muted">cost exposure</small></div></div></div>
 </div>
 <div class="row g-4">
-    <div class="col-lg-7"><div class="card shadow-sm border-0"><div class="card-body"><h5>Record waste</h5><form asp-action="AddWaste" method="post" class="row g-2">
-        <div class="col-md-5"><select name="IngredientId" class="form-select"><option value="">Ingredient</option>@foreach (var item in ingredients) { <option value="@item.Id">@item.Name (@item.Unit)</option> }</select></div>
-        <div class="col-md-2"><input name="Quantity" class="form-control" type="number" step="0.001" min="0" placeholder="Qty" required /></div>
-        <div class="col-md-3"><select name="Reason" class="form-select">@foreach (var reason in Enum.GetValues<WasteReason>()) { <option value="@reason">@reason</option> }</select></div>
-        <div class="col-md-2"><button class="btn btn-danger w-100">Save</button></div>
-    </form></div></div>
-    <div class="card shadow-sm border-0 mt-4"><div class="card-body"><h5>Recent waste events</h5><table class="table table-sm"><thead><tr><th>Date</th><th>Item</th><th>Reason</th><th>Cost</th></tr></thead><tbody>@foreach (var item in Model.RecentWaste) { <tr><td>@item.WasteDate.ToString("dd MMM")</td><td>@(item.Ingredient?.Name ?? item.MenuDish?.Name ?? "General")</td><td>@item.Reason</td><td>₹@item.Cost.ToString("N2")</td></tr> }</tbody></table></div></div></div>
-    <div class="col-lg-5"><div class="card shadow-sm border-0"><div class="card-body"><h5>Planning shortcuts</h5><p class="text-muted">Use the REST API from a mobile attendance capture app or integrate with a kitchen display.</p><div class="d-grid gap-2"><a class="btn btn-outline-primary" href="/api/forecast">View forecast API</a><a class="btn btn-outline-secondary" href="/api/dishes">View dishes API</a><a class="btn btn-outline-secondary" href="/api/waste-summary">View waste report API</a></div></div></div></div>
+    <div class="col-lg-8">
+        <div class="card dashboard-card mb-4"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-3"><div><h5 class="mb-1">Forecast quality</h5><small class="text-muted">Statistical model performance</small></div><span class="badge text-bg-primary">Live</span></div>
+            <div class="row g-3"><div class="col-4"><div class="text-muted small">MAE</div><div class="fs-3 fw-bold">@Model.ForecastMae</div></div><div class="col-4"><div class="text-muted small">MAPE</div><div class="fs-3 fw-bold">@Model.ForecastMape%</div></div><div class="col-4"><div class="text-muted small">Method</div><div class="fw-semibold mt-2">Weekday + events</div></div></div>
+            <div class="progress mt-4" style="height:10px"><div class="progress-bar bg-success" style="width:@((int)(Model.ForecastConfidence * 100))%"></div></div>
+        </div></div>
+        <div class="card dashboard-card"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-3"><h5 class="mb-0">Waste activity</h5><a class="btn btn-sm btn-outline-primary" asp-controller="Operations" asp-action="Index">Record more</a></div>
+            @if (Model.RecentWaste.Any()) { <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Date</th><th>Item</th><th>Reason</th><th class="text-end">Cost</th></tr></thead><tbody>@foreach (var item in Model.RecentWaste) { <tr><td>@item.WasteDate.ToString("dd MMM")</td><td>@(item.Ingredient?.Name ?? item.MenuDish?.Name ?? "General")</td><td><span class="badge text-bg-light">@item.Reason</span></td><td class="text-end fw-semibold">₹@item.Cost.ToString("N2")</td></tr> }</tbody></table></div> } else { <div class="empty-state">No waste records yet. Add the first one from Operations.</div> }
+        </div></div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card dashboard-card mb-4"><div class="card-body"><h5 class="mb-3">Quick actions</h5><div class="d-grid gap-2">
+            <a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-primary-subtle text-primary">+</span><span><strong>Open operations</strong><small class="d-block text-muted">Forms and service data</small></span></a>
+            @if (User.IsInRole("Student")) { <a class="quick-action" asp-controller="Operations" asp-action="Index"><span class="metric-icon bg-success-subtle text-success">B</span><span><strong>Book a meal</strong><small class="d-block text-muted">Reserve before cutoff</small></span></a> }
+            @if (User.IsInRole("Admin")) { <a class="quick-action" asp-controller="Admin" asp-action="Index"><span class="metric-icon bg-danger-subtle text-danger">A</span><span><strong>Admin centre</strong><small class="d-block text-muted">Users and halls</small></span></a> }
+            <a class="quick-action" href="/api/forecast"><span class="metric-icon bg-warning-subtle text-warning">↗</span><span><strong>Forecast data</strong><small class="d-block text-muted">JSON endpoint</small></span></a>
+        </div></div></div>
+        <div class="card dashboard-card"><div class="card-body"><h5 class="mb-3">Stock watch</h5>@foreach (var item in ingredients.Take(5)) { var width = Math.Min(100, (double)item.CurrentStock / 40 * 100); <div class="mb-3"><div class="d-flex justify-content-between small"><span>@item.Name</span><span class="text-muted">@item.CurrentStock @item.Unit</span></div><div class="progress" style="height:7px"><div class="progress-bar @(item.CurrentStock < 5 ? "bg-danger" : "bg-info")" style="width:@width%"></div></div></div> }</div></div>
+    </div>
 </div>

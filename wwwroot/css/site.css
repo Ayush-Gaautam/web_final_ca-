@@ -19,7 +19,32 @@ html {
 
 body {
   margin-bottom: 60px;
+  background: #f5f7fb;
+  color: #172033;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+
+.navbar {
+  background: linear-gradient(110deg, #172554 0%, #312e81 55%, #7c3aed 100%) !important;
+  border-bottom: 0 !important;
+}
+.navbar .navbar-brand, .navbar .nav-link, .navbar .btn-link { color: #fff !important; }
+.navbar .nav-link { margin-right: .4rem; border-radius: .55rem; }
+.navbar .nav-link:hover { background: rgba(255,255,255,.15); }
+.app-shell { min-height: calc(100vh - 130px); }
+.hero-card { border: 0; border-radius: 1.25rem; color: #fff; background: linear-gradient(120deg, #2563eb, #7c3aed); box-shadow: 0 16px 35px rgba(37,99,235,.22); }
+.metric-card { border: 0; border-radius: 1rem; box-shadow: 0 8px 24px rgba(30,41,59,.08); overflow: hidden; }
+.metric-card .metric-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: .8rem; font-weight: 800; }
+.metric-blue { border-top: 4px solid #2563eb; } .metric-blue .metric-icon { background:#dbeafe; color:#1d4ed8; }
+.metric-green { border-top: 4px solid #16a34a; } .metric-green .metric-icon { background:#dcfce7; color:#15803d; }
+.metric-orange { border-top: 4px solid #f97316; } .metric-orange .metric-icon { background:#ffedd5; color:#c2410c; }
+.metric-red { border-top: 4px solid #ef4444; } .metric-red .metric-icon { background:#fee2e2; color:#b91c1c; }
+.dashboard-card { border: 0; border-radius: 1rem; box-shadow: 0 8px 24px rgba(30,41,59,.07); }
+.table thead th { color: #64748b; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+.quick-action { display:flex; align-items:center; gap:.75rem; padding:.85rem 1rem; border-radius:.8rem; background:#f8fafc; border:1px solid #e2e8f0; text-decoration:none; color:#172033; transition:.2s; }
+.quick-action:hover { transform: translateY(-2px); background:#eef2ff; border-color:#818cf8; color:#312e81; }
+.role-pill { border-radius:999px; padding:.45rem .8rem; font-size:.8rem; font-weight:700; background:rgba(255,255,255,.18); }
+.empty-state { padding:2.5rem 1rem; text-align:center; color:#64748b; }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
