@@ -7,7 +7,7 @@ namespace web_ca_3.Data;
 
 public static class DbInitializer
 {
-    public static async Task InitializeAsync(IServiceProvider services)
+    public static async Task InitializeAsync(IServiceProvider services, IHostEnvironment environment)
     {
         var db = services.GetRequiredService<ApplicationDbContext>();
         if (db.Database.IsSqlServer())
@@ -31,24 +31,37 @@ public static class DbInitializer
             await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ServiceActuals_ServiceDate_Meal_HallId ON ServiceActuals(ServiceDate, Meal, HallId);");
         }
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "Admin", "Manager", "Staff", "Student", "KitchenStaff" }.Concat(RoleNames.All))
-            if (!await roleManager.RoleExistsAsync(role))
-                await roleManager.CreateAsync(new IdentityRole(role));
+        foreach (var role in new[] { "Admin", "Manager", "Staff", "Student", "KitchenStaff" }.Concat(RoleNames.All).Distinct())
+        {
+            if (await roleManager.RoleExistsAsync(role))
+                continue;
+
+            var roleResult = await roleManager.CreateAsync(new IdentityRole(role));
+            if (!roleResult.Succeeded)
+                throw new InvalidOperationException($"Could not create role '{role}': {FormatErrors(roleResult.Errors)}");
+        }
 
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
-        await EnsureUserAsync(userManager, "admin@mess.local", "Admin123!", "Admin");
-        await EnsureUserAsync(userManager, "manager@mess.local", "Manager123!", "Manager");
-        await EnsureUserAsync(userManager, "kitchen@mess.local", "Kitchen123!", "KitchenStaff");
-        await EnsureUserAsync(userManager, "student@mess.local", "Student123!", "Student");
-        await EnsureUserAsync(userManager, "messadmin@mess.local", "MessAdmin123!", RoleNames.MessAdministrator);
-        await EnsureUserAsync(userManager, "finance@mess.local", "Finance123!", RoleNames.FinanceOfficer);
-        await EnsureUserAsync(userManager, "sysadmin@mess.local", "SysAdmin123!", RoleNames.SystemAdministrator);
-        await EnsureUserAsync(userManager, "admin@mess.local", "Admin123!", RoleNames.SystemAdministrator);
-        await EnsureUserAsync(userManager, "manager@mess.local", "Manager123!", RoleNames.MessManager);
-        await EnsureUserAsync(userManager, "kitchen@mess.local", "Kitchen123!", RoleNames.KitchenStaff);
+        var demoUsers = new[]
+        {
+            new DemoUser("admin@mess.local", "Admin123!", new[] { "Admin", RoleNames.SystemAdministrator }),
+            new DemoUser("manager@mess.local", "Manager123!", new[] { "Manager", RoleNames.MessManager }),
+            new DemoUser("kitchen@mess.local", "Kitchen123!", new[] { "Staff", RoleNames.KitchenStaff }),
+            new DemoUser("student@mess.local", "Student123!", new[] { RoleNames.Student }),
+            new DemoUser("messadmin@mess.local", "MessAdmin123!", new[] { RoleNames.MessAdministrator }),
+            new DemoUser("finance@mess.local", "Finance123!", new[] { RoleNames.FinanceOfficer }),
+            new DemoUser("sysadmin@mess.local", "SysAdmin123!", new[] { RoleNames.SystemAdministrator })
+        };
+        foreach (var demoUser in demoUsers)
+            await EnsureUserAsync(userManager, demoUser, environment.IsDevelopment());
+
         foreach (var user in await userManager.Users.ToListAsync())
             if (!await HasAnyRoleAsync(userManager, user, RoleNames.All.Concat(new[] { "Admin", "Manager", "Staff" })))
-                await userManager.AddToRoleAsync(user, "Student");
+            {
+                var studentRoleResult = await userManager.AddToRoleAsync(user, RoleNames.Student);
+                if (!studentRoleResult.Succeeded)
+                    throw new InvalidOperationException($"Could not assign fallback Student role to '{user.Email}': {FormatErrors(studentRoleResult.Errors)}");
+            }
 
         if (await db.MenuDishes.AnyAsync()) return;
 
@@ -74,20 +87,64 @@ public static class DbInitializer
 
     }
 
-    private static async Task EnsureUserAsync(UserManager<IdentityUser> userManager, string email, string password, string role)
+    private static async Task EnsureUserAsync(UserManager<IdentityUser> userManager, DemoUser demoUser, bool resetPassword)
     {
-        var user = await userManager.FindByEmailAsync(email);
+        var user = await userManager.FindByEmailAsync(demoUser.Email);
         if (user is null)
         {
-            user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
-            var result = await userManager.CreateAsync(user, password);
+            user = new IdentityUser { UserName = demoUser.Email, Email = demoUser.Email, EmailConfirmed = true };
+            var result = await userManager.CreateAsync(user, demoUser.Password);
             if (!result.Succeeded)
-                throw new InvalidOperationException(string.Join("; ", result.Errors.Select(x => x.Description)));
+                throw new InvalidOperationException($"Could not create demo user '{demoUser.Email}': {FormatErrors(result.Errors)}");
+        }
+        else
+        {
+            var changed = false;
+            if (!string.Equals(user.UserName, demoUser.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                user.UserName = demoUser.Email;
+                changed = true;
+            }
+            if (!string.Equals(user.Email, demoUser.Email, StringComparison.OrdinalIgnoreCase) || !user.EmailConfirmed)
+            {
+                user.Email = demoUser.Email;
+                user.EmailConfirmed = true;
+                changed = true;
+            }
+            if (changed)
+            {
+                var updateResult = await userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                    throw new InvalidOperationException($"Could not update demo user '{demoUser.Email}': {FormatErrors(updateResult.Errors)}");
+            }
+
+            if (resetPassword)
+            {
+                var removeResult = await userManager.RemovePasswordAsync(user);
+                if (!removeResult.Succeeded)
+                    throw new InvalidOperationException($"Could not reset password for '{demoUser.Email}': {FormatErrors(removeResult.Errors)}");
+
+                var addResult = await userManager.AddPasswordAsync(user, demoUser.Password);
+                if (!addResult.Succeeded)
+                    throw new InvalidOperationException($"Could not set password for '{demoUser.Email}': {FormatErrors(addResult.Errors)}");
+            }
         }
 
-        if (!await userManager.IsInRoleAsync(user, role))
-            await userManager.AddToRoleAsync(user, role);
+        foreach (var role in demoUser.Roles)
+        {
+            if (await userManager.IsInRoleAsync(user, role))
+                continue;
+
+            var roleResult = await userManager.AddToRoleAsync(user, role);
+            if (!roleResult.Succeeded)
+                throw new InvalidOperationException($"Could not assign role '{role}' to '{demoUser.Email}': {FormatErrors(roleResult.Errors)}");
+        }
     }
+
+    private sealed record DemoUser(string Email, string Password, string[] Roles);
+
+    private static string FormatErrors(IEnumerable<IdentityError> errors) =>
+        string.Join("; ", errors.Select(error => error.Description));
 
     private static async Task<bool> HasAnyRoleAsync(UserManager<IdentityUser> userManager, IdentityUser user, IEnumerable<string> roles)
     {

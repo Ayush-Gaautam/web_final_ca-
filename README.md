@@ -11,7 +11,7 @@ dotnet restore
 dotnet run
 ```
 
-Demo logins:
+Demo logins (Development only; startup creates missing accounts, assigns roles, and synchronizes these passwords without deleting data):
 
 - Admin: `admin@mess.local` / `Admin123!`
 - Manager: `manager@mess.local` / `Manager123!`

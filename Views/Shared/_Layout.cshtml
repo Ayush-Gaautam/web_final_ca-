@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@inject IWebHostEnvironment HostEnvironment
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -38,6 +39,29 @@
         </nav>
     </header>
     <div class="container app-shell py-3">
+        @if (HostEnvironment.IsDevelopment())
+        {
+            <div class="alert alert-info border-0 shadow-sm" role="note">
+                <strong>Development demo accounts</strong>
+                <span class="ms-2">Passwords are synchronized automatically on each Development startup.</span>
+                <details class="mt-2">
+                    <summary class="fw-semibold">Show credentials</summary>
+                    <div class="table-responsive mt-2">
+                        <table class="table table-sm table-bordered mb-0 bg-white">
+                            <thead><tr><th>Role</th><th>Email</th><th>Password</th></tr></thead>
+                            <tbody>
+                                <tr><td>Student</td><td>student@mess.local</td><td>Student123!</td></tr>
+                                <tr><td>Kitchen Staff</td><td>kitchen@mess.local</td><td>Kitchen123!</td></tr>
+                                <tr><td>Mess Manager</td><td>manager@mess.local</td><td>Manager123!</td></tr>
+                                <tr><td>Mess Administrator</td><td>messadmin@mess.local</td><td>MessAdmin123!</td></tr>
+                                <tr><td>Finance Officer</td><td>finance@mess.local</td><td>Finance123!</td></tr>
+                                <tr><td>System Administrator</td><td>sysadmin@mess.local</td><td>SysAdmin123!</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            </div>
+        }
         <main role="main" class="pb-3">
             @RenderBody()
         </main>

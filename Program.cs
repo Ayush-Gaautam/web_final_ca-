@@ -61,7 +61,7 @@ app.MapRazorPages()
 
 using (var scope = app.Services.CreateScope())
 {
-    await DbInitializer.InitializeAsync(scope.ServiceProvider);
+    await DbInitializer.InitializeAsync(scope.ServiceProvider, app.Environment);
     await DevelopmentDataSeeder.InitializeAsync(scope.ServiceProvider, app.Environment);
 }
 
