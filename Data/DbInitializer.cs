@@ -130,6 +130,9 @@ public static class DbInitializer
             }
         }
 
+        if (resetPassword && !await userManager.CheckPasswordAsync(user, demoUser.Password))
+            throw new InvalidOperationException($"The Development password for '{demoUser.Email}' could not be verified after synchronization.");
+
         foreach (var role in demoUser.Roles)
         {
             if (await userManager.IsInRoleAsync(user, role))
