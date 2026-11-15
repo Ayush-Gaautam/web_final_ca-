@@ -197,6 +197,56 @@ public sealed class ApiController(ApplicationDbContext db, ForecastingService fo
     [HttpDelete("waste/{id:int}"), Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> DeleteWaste(int id) => await RemoveAsync(db, db.WasteRecords, id);
 
+    [HttpGet("halls")]
+    public async Task<ActionResult<IEnumerable<Hall>>> GetHalls() => Ok(await db.Halls.AsNoTracking().Where(x => x.IsActive).OrderBy(x => x.Name).ToListAsync());
+
+    [HttpPost("halls"), Authorize(Roles = "Admin,Manager")]
+    public async Task<ActionResult<Hall>> CreateHall(HallRequest request)
+    {
+        if (await db.Halls.AnyAsync(x => x.Name == request.Name)) return Conflict("A hall with this name already exists.");
+        var hall = new Hall { Name = request.Name.Trim(), Capacity = request.Capacity, IsActive = request.IsActive };
+        db.Halls.Add(hall); await db.SaveChangesAsync();
+        return Ok(hall);
+    }
+
+    [HttpGet("bookings"), Authorize(Roles = "Admin,Manager,Staff,Student,KitchenStaff")]
+    public async Task<ActionResult<IEnumerable<MealBooking>>> GetBookings()
+    {
+        var email = User.IsInRole("Student") ? User.Identity!.Name! : null;
+        var query = db.MealBookings.AsNoTracking().AsQueryable();
+        if (email is not null) query = query.Where(x => x.StudentEmail == email);
+        return Ok(await query.OrderByDescending(x => x.BookingDate).ToListAsync());
+    }
+
+    [HttpPost("bookings"), Authorize(Roles = "Student")]
+    public async Task<ActionResult<MealBooking>> CreateBooking(BookingRequest request)
+    {
+        if (request.BookingDate.Date < DateTime.Today) return BadRequest("Booking date must be today or later.");
+        if (request.BookingDate.Date == DateTime.Today && DateTime.Now.Hour >= 10) return BadRequest("Same-day booking closes at 10:00.");
+        var email = User.Identity!.Name!;
+        if (await db.MealBookings.AnyAsync(x => x.StudentEmail == email && x.BookingDate == request.BookingDate.Date && x.Meal == request.Meal && x.Status == BookingStatus.Booked))
+            return Conflict("This meal is already booked.");
+        var booking = new MealBooking { StudentEmail = email, BookingDate = request.BookingDate.Date, Meal = request.Meal };
+        db.MealBookings.Add(booking); await db.SaveChangesAsync();
+        return Ok(booking);
+    }
+
+    [HttpDelete("bookings/{id:int}"), Authorize(Roles = "Student,Admin,Manager")]
+    public async Task<IActionResult> CancelBooking(int id)
+    {
+        var booking = await db.MealBookings.FindAsync(id);
+        if (booking is null || (User.IsInRole("Student") && booking.StudentEmail != User.Identity!.Name)) return NotFound();
+        if (booking.BookingDate.Date == DateTime.Today && DateTime.Now.Hour >= 10) return BadRequest("Same-day cancellation closes at 10:00.");
+        booking.Status = BookingStatus.Cancelled; await db.SaveChangesAsync(); return NoContent();
+    }
+
+    [HttpPost("feedback"), Authorize(Roles = "Student")]
+    public async Task<ActionResult<Feedback>> CreateFeedback(FeedbackRequest request)
+    {
+        var feedback = new Feedback { StudentEmail = User.Identity!.Name!, Rating = request.Rating, Comment = request.Comment.Trim() };
+        db.Feedback.Add(feedback); await db.SaveChangesAsync(); return Ok(feedback);
+    }
+
     private static async Task<IActionResult> RemoveAsync<TEntity>(ApplicationDbContext db, DbSet<TEntity> set, int id) where TEntity : class
     {
         var item = await set.FindAsync(id); if (item is null) return new NotFoundResult();

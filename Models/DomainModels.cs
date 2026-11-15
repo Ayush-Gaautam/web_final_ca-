@@ -4,6 +4,7 @@ namespace web_ca_3.Models;
 
 public enum MealType { Breakfast, Lunch, Dinner, Snack }
 public enum WasteReason { Overproduction, Spoilage, PlateWaste, PreparationLoss, Other }
+public enum BookingStatus { Booked, Cancelled, Served }
 
 public class MenuDish
 {
@@ -87,4 +88,31 @@ public class WasteRecord
     public WasteReason Reason { get; set; }
     [StringLength(300)] public string? Notes { get; set; }
     public decimal Cost => Quantity * UnitCost;
+}
+
+public class Hall
+{
+    public int Id { get; set; }
+    [Required, StringLength(100)] public string Name { get; set; } = string.Empty;
+    [Range(1, 100000)] public int Capacity { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
+public class MealBooking
+{
+    public int Id { get; set; }
+    [Required, StringLength(256)] public string StudentEmail { get; set; } = string.Empty;
+    public DateTime BookingDate { get; set; } = DateTime.Today;
+    public MealType Meal { get; set; }
+    public BookingStatus Status { get; set; } = BookingStatus.Booked;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class Feedback
+{
+    public int Id { get; set; }
+    [Required, StringLength(256)] public string StudentEmail { get; set; } = string.Empty;
+    public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+    [Range(1, 5)] public int Rating { get; set; }
+    [Required, StringLength(1000)] public string Comment { get; set; } = string.Empty;
 }

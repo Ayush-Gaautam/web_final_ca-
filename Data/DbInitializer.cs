@@ -21,6 +21,22 @@ public static class DbInitializer
             await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ServiceActuals_ServiceDate_Meal ON ServiceActuals(ServiceDate, Meal);");
             await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_ForecastRecords_ForecastDate_Meal ON ForecastRecords(ForecastDate, Meal);");
         }
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        foreach (var role in new[] { "Admin", "Manager", "Staff", "Student", "KitchenStaff" })
+            if (!await roleManager.RoleExistsAsync(role))
+                await roleManager.CreateAsync(new IdentityRole(role));
+
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        await EnsureUserAsync(userManager, "admin@mess.local", "Admin123!", "Admin");
+        await EnsureUserAsync(userManager, "manager@mess.local", "Manager123!", "Manager");
+        await EnsureUserAsync(userManager, "kitchen@mess.local", "Kitchen123!", "KitchenStaff");
+        await EnsureUserAsync(userManager, "student@mess.local", "Student123!", "Student");
+        foreach (var user in await userManager.Users.ToListAsync())
+            if (!await userManager.IsInRoleAsync(user, "Admin") && !await userManager.IsInRoleAsync(user, "Manager") &&
+                !await userManager.IsInRoleAsync(user, "Staff") && !await userManager.IsInRoleAsync(user, "Student") &&
+                !await userManager.IsInRoleAsync(user, "KitchenStaff"))
+                await userManager.AddToRoleAsync(user, "Student");
+
         if (await db.MenuDishes.AnyAsync()) return;
 
         var rice = new Ingredient { Name = "Rice", Unit = "kg", UnitCost = 70, CurrentStock = 40 };
@@ -43,17 +59,20 @@ public static class DbInitializer
             new AttendanceRecord { ServiceDate = DateTime.Today.AddDays(-3), Meal = MealType.Lunch, ExpectedCount = 100, ActualCount = 88 });
         await db.SaveChangesAsync();
 
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "Admin", "Manager", "Staff" })
-            if (!await roleManager.RoleExistsAsync(role)) await roleManager.CreateAsync(new IdentityRole(role));
-        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
-        var admin = await userManager.FindByEmailAsync("admin@mess.local");
-        if (admin is null)
+    }
+
+    private static async Task EnsureUserAsync(UserManager<IdentityUser> userManager, string email, string password, string role)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
         {
-            admin = new IdentityUser { UserName = "admin@mess.local", Email = "admin@mess.local", EmailConfirmed = true };
-            await userManager.CreateAsync(admin, "Admin123!");
-            await userManager.AddToRoleAsync(admin, "Admin");
+            user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
+            var result = await userManager.CreateAsync(user, password);
+            if (!result.Succeeded)
+                throw new InvalidOperationException(string.Join("; ", result.Errors.Select(x => x.Description)));
         }
+        if (!await userManager.IsInRoleAsync(user, role))
+            await userManager.AddToRoleAsync(user, role);
     }
 
     private static async Task EnsureSqliteDomainSchemaAsync(ApplicationDbContext db)
@@ -112,9 +131,30 @@ public static class DbInitializer
                     CONSTRAINT FK_WasteRecords_Ingredients_IngredientId FOREIGN KEY (IngredientId) REFERENCES Ingredients(Id) ON DELETE SET NULL,
                     CONSTRAINT FK_WasteRecords_MenuDishes_MenuDishId FOREIGN KEY (MenuDishId) REFERENCES MenuDishes(Id) ON DELETE SET NULL
                 );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS Halls (
+                    Id INTEGER NOT NULL CONSTRAINT PK_Halls PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL, Capacity INTEGER NOT NULL, IsActive INTEGER NOT NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS MealBookings (
+                    Id INTEGER NOT NULL CONSTRAINT PK_MealBookings PRIMARY KEY AUTOINCREMENT,
+                    StudentEmail TEXT NOT NULL, BookingDate TEXT NOT NULL, Meal INTEGER NOT NULL,
+                    Status INTEGER NOT NULL, CreatedAt TEXT NOT NULL
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS Feedback (
+                    Id INTEGER NOT NULL CONSTRAINT PK_Feedback PRIMARY KEY AUTOINCREMENT,
+                    StudentEmail TEXT NOT NULL, SubmittedAt TEXT NOT NULL, Rating INTEGER NOT NULL, Comment TEXT NOT NULL
+                );
                 """
             };
             foreach (var command in commands)
                 await db.Database.ExecuteSqlRawAsync(command);
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_Halls_Name ON Halls(Name);");
+            await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS IX_MealBookings_StudentEmail_BookingDate_Meal ON MealBookings(StudentEmail, BookingDate, Meal);");
         }
     }

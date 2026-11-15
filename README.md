@@ -11,7 +11,14 @@ dotnet restore
 dotnet run
 ```
 
-Demo login: `admin@mess.local` / `Admin123!`.
+Demo logins:
+
+- Admin: `admin@mess.local` / `Admin123!`
+- Manager: `manager@mess.local` / `Manager123!`
+- Kitchen staff: `kitchen@mess.local` / `Kitchen123!`
+- Student: `student@mess.local` / `Student123!`
+
+After startup: dashboard `/`, operations `/Operations`, admin `/Admin`, Identity login `/Identity/Account/Login`, forecast API `/api/forecast`, and Swagger-free API collection examples in `postman/MessForecast.postman_collection.json`.
 
 The app never runs `EnsureDeleted`, `database drop`, or a destructive reset. Existing SQLite data is retained; startup only creates missing objects and idempotent indexes.
 
@@ -30,6 +37,7 @@ The web container selects SQL Server through `DatabaseProvider=SqlServer`, waits
 - Unique constraints, non-negative quantity/cost validation, duplicate conflict responses, and safe soft-delete for dishes.
 - Statistical forecast using weighted moving average, weekday adjustment, calendar-event adjustment, MAE, MAPE, and confidence.
 - Responsive dashboard and operations tables designed for tablet service capture.
+- Students can book/cancel meals before the 10:00 same-day cutoff and submit feedback through REST endpoints; kitchen staff can capture service data; managers can review forecast metrics; admins can manage users and halls.
 - Authorized REST CRUD: `/api/dishes`, `/api/ingredients`, `/api/attendance`, `/api/events`, `/api/actuals`, `/api/waste`; forecast and reporting endpoints are also available.
 - Postman examples in `postman/MessForecast.postman_collection.json`.
 - Source documentation and syllabus mapping in `docs/`.

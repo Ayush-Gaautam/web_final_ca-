@@ -14,6 +14,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ForecastRecord> ForecastRecords => Set<ForecastRecord>();
     public DbSet<ServiceActual> ServiceActuals => Set<ServiceActual>();
     public DbSet<WasteRecord> WasteRecords => Set<WasteRecord>();
+    public DbSet<Hall> Halls => Set<Hall>();
+    public DbSet<MealBooking> MealBookings => Set<MealBooking>();
+    public DbSet<Feedback> Feedback => Set<Feedback>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -24,6 +27,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<AttendanceRecord>().HasIndex(x => new { x.ServiceDate, x.Meal }).IsUnique();
         builder.Entity<ForecastRecord>().HasIndex(x => new { x.ForecastDate, x.Meal }).IsUnique();
         builder.Entity<ServiceActual>().HasIndex(x => new { x.ServiceDate, x.Meal }).IsUnique();
+        builder.Entity<Hall>().HasIndex(x => x.Name).IsUnique();
+        builder.Entity<MealBooking>().HasIndex(x => new { x.StudentEmail, x.BookingDate, x.Meal }).IsUnique();
         builder.Entity<Ingredient>().ToTable(t => t.HasCheckConstraint("CK_Ingredients_UnitCost", "[UnitCost] >= 0"));
         builder.Entity<Ingredient>().ToTable(t => t.HasCheckConstraint("CK_Ingredients_CurrentStock", "[CurrentStock] >= 0"));
         builder.Entity<WasteRecord>().ToTable(t => t.HasCheckConstraint("CK_WasteRecords_Quantity", "[Quantity] >= 0"));

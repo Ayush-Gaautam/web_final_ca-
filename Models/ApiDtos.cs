@@ -55,3 +55,22 @@ public sealed class WasteRequest
     public WasteReason Reason { get; set; }
     [StringLength(300)] public string? Notes { get; set; }
 }
+
+public sealed class BookingRequest
+{
+    public DateTime BookingDate { get; set; } = DateTime.Today;
+    public MealType Meal { get; set; }
+}
+
+public sealed class FeedbackRequest
+{
+    [Range(1, 5)] public int Rating { get; set; }
+    [Required, StringLength(1000)] public string Comment { get; set; } = string.Empty;
+}
+
+public sealed class HallRequest
+{
+    [Required, StringLength(100)] public string Name { get; set; } = string.Empty;
+    [Range(1, 100000)] public int Capacity { get; set; }
+    public bool IsActive { get; set; } = true;
+}
